@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>AutoStelle Button Monitor</title>
+  <style>
+    body { font-family: sans-serif; text-align: center; margin-top: 5rem; }
+    .state { font-size: 2rem; font-weight: bold; margin-top: 1rem; }
+  </style>
+</head>
+<body>
+  <h1>🚗 AutoStelle – Button State</h1>
+  <div class="state" id="buttonState">Loading...</div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
+    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDGWnf6xxDP7OE1o95YIx97Q6TDbxVrgIk",
+      authDomain: "ashlyn-autostelle.firebaseapp.com",
+      projectId: "ashlyn-autostelle",
+      storageBucket: "ashlyn-autostelle.appspot.com",
+      messagingSenderId: "963559722963",
+      appId: "1:963559722963:web:825ac9a1ac205d7def2926",
+      databaseURL: "https://ashlyn-autostelle-default-rtdb.firebaseio.com"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const database = getDatabase(app);
+
+    const buttonRef = ref(database, 'buttonState');
+
+    onValue(buttonRef, (snapshot) => {
+      const state = snapshot.val();
+      document.getElementById("buttonState").innerText = state === "pressed" ? "🔴 PRESSED" : "⚪ RELEASED";
+    });
+  </script>
+</body>
+</html>
