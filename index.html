@@ -3,8 +3,16 @@
 <head>
   <title>AutoStelle Button Monitor</title>
   <style>
-    body { font-family: sans-serif; text-align: center; margin-top: 5rem; }
-    .state { font-size: 2rem; font-weight: bold; margin-top: 1rem; }
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      margin-top: 5rem;
+    }
+    .state {
+      font-size: 2rem;
+      font-weight: bold;
+      margin-top: 1rem;
+    }
   </style>
 </head>
 <body>
@@ -32,7 +40,11 @@
 
     onValue(buttonRef, (snapshot) => {
       const state = snapshot.val();
-      document.getElementById("buttonState").innerText = state === "pressed" ? "🔴 PRESSED" : "⚪ RELEASED";
+      document.getElementById("buttonState").innerText =
+        state === "pressed" ? "🔴 PRESSED" : "⚪ RELEASED";
+    }, (error) => {
+      console.error("Firebase read failed:", error);
+      document.getElementById("buttonState").innerText = "❌ Error loading data";
     });
   </script>
 </body>
