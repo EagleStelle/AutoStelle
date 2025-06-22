@@ -1,18 +1,52 @@
 // ui.js
-export function showModal(message, color = "green") {
-    const modal = document.getElementById("modal");
-    const modalMessage = document.getElementById("modalMessage");
-  
-    modalMessage.textContent = message;
-    modalMessage.style.color = color;
-    modal.classList.remove("hidden");
-    modal.classList.add("show");
+export function showModal(arg, color = "success") {
+  let modal;
+
+  const colorMap = {
+    success: "var(--peach-fuzz)",
+    error: "var(--blush-mist)",
+    info: "var(--lavender-haze)",
+    default: "var(--mauve-mist)",
+  };
+
+  const colorKeys = Object.keys(colorMap);
+
+  if (typeof arg === "string") {
+    // If it's a text message AND a valid color is provided
+    if (colorKeys.includes(color) && !document.getElementById(arg)) {
+      modal = document.getElementById("modal");
+      const modalMessage = document.getElementById("modalMessage");
+
+      if (modalMessage) {
+        modalMessage.textContent = arg;
+        modalMessage.style.color = colorMap[color] || colorMap.default;
+      }
+    } else {
+      // Otherwise treat string as modal ID
+      modal = document.getElementById(arg);
+    }
+  } else if (arg instanceof HTMLElement) {
+    modal = arg;
+  }
+
+  if (!modal) return;
+
+  modal.classList.remove("hidden");
+  modal.classList.add("show");
 }
-  
-export function closeModal() {
-    const modal = document.getElementById("modal");
-    modal.classList.remove("show");
-    modal.classList.add("hidden");
+
+
+export function closeModal(modalId = null) {
+  const modals = modalId
+    ? [document.getElementById(modalId)]
+    : document.querySelectorAll(".modal.show");
+
+  modals.forEach((modal) => {
+    if (modal) {
+      modal.classList.remove("show");
+      modal.classList.add("hidden");
+    }
+  });
 }
   
 export function initPasswordToggle(inputId) {

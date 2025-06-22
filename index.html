@@ -2,34 +2,100 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Login</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AutoStelle</title>
   <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 <body>
-  <div class="login-container">
-    <h2>Login</h2>
-    <form id="loginForm" autocomplete="on">
-      <input type="email" id="email" name="email" placeholder="Email" required autocomplete="email" />
-      <input type="password" id="password" name="password" placeholder="Password" required autocomplete="current-password" />
-      <div class="g-recaptcha" data-sitekey="6LfqMDIrAAAAAAfN5rQGKS9WFK9dP1S4lFMwi8CS"></div>
-      <button class="primary-button" type="submit">Log In</button>
-    </form>
-  </div>  
+  <div class="main-container">
+    <div class="parking-area normal-parking">
+      <h2>Normal Parking</h2>
+      <div class="slot-grid" id="normalSlots">
+        <div class="slot">A1</div>
+        <div class="slot">A2</div>
+        <div class="slot">A3</div>
+        <div class="slot">A4</div>
+      </div>
+    </div>
 
-  <!-- Modal copied from register -->
+    <div class="parking-area reserved-parking">
+      <h2>Reserved Parking</h2>
+      <div class="slot-grid" id="reservedSlots">
+        <div class="slot reserved">R1</div>
+        <div class="slot reserved">R2</div>
+        <div class="slot reserved">R3</div>
+        <div class="slot reserved">R4</div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="copyright">
+      <a href="https://github.com/EagleStelle" target="_blank" class="github-link">
+        <i class="fab fa-github"></i> EagleStelle
+      </a>
+      <p>© 2025 AutoStelle. All rights reserved.</p>
+    </div>
+
+    <div class="branding">
+      <h1>AutoStelle</h1>
+      <p>Intelligent Parking with Stellar Precision</p>
+    </div>
+
+    <div class="control hidden" id="controlPanel">
+      <button class="danger" id="logout">
+        <i class="fa-solid fa-right-from-bracket"></i> Logout
+      </button>
+      <button id="reserve">
+        <i class="fa-solid fa-plus"></i> Reserve
+      </button>
+      <button id="remove">
+        <i class="fa-solid fa-trash"></i> Remove
+      </button>
+    </div>
+  </footer>
+
+  <!-- Message Modal -->
   <div id="modal" class="modal hidden">
     <div class="modal-backdrop"></div>
     <div class="modal-content">
       <p id="modalMessage"></p>
-      <button id="closeModalBtn">Close</button>
+      <button class="outline" id="cancelScan">Cancel</button>
     </div>
   </div>
 
-  <!-- Firebase & login script -->
-  <script type="module" src="scripts/login.js"></script>
+  <!-- Add UID Modal -->
+  <div id="addModal" class="modal hidden">
+    <div class="modal-content">
+      <h2>Add New Reservation</h2>
+      <input type="text" id="inputName" placeholder="Enter name" />
+      <input type="text" id="inputPlate" placeholder="Enter plate number" />
+      <!-- Add more inputs as needed -->
+      <div class="modal-actions">
+        <button id="confirmAdd">Confirm</button>
+        <button id="cancelAdd">Cancel</button>
+      </div>
+    </div>
+  </div>
 
-  <!-- reCAPTCHA script -->
-  <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+  <!-- Remove UID Modal -->
+  <div id="removeModal" class="modal hidden">
+    <div class="modal-backdrop"></div>
+    <div class="modal-content">
+      <h3>Remove Reserved UIDs</h3>
+      <div id="uidList" class="uid-list"></div>
+      <div class="modal-actions">
+        <button class="danger" id="bulkDeleteBtn">
+          <i class="fa-solid fa-trash"></i> Delete Selected
+        </button>
+        <button class="outline" id="closeRemoveModalBtn">
+          <i class="fa-solid fa-xmark"></i> Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="scripts/monitor.js"></script>
 </body>
 </html>
