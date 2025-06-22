@@ -1,3 +1,4 @@
+// login.js
 import { auth } from "./firebase.js";
 import {
   signInWithEmailAndPassword,
@@ -11,22 +12,22 @@ import { showModal, closeModal, initPasswordToggle } from "./ui.js";
 // 🔒 Redirect if already logged in and verified
 onAuthStateChanged(auth, (user) => {
   if (user && user.emailVerified) {
-    window.location.href = "monitor.html";
+    window.location.href = "index.html";
   }
 });
 
-document.getElementById("closeModalBtn").addEventListener("click", closeModal);
+document.getElementById("closeModal").addEventListener("click", closeModal);
 document.addEventListener("DOMContentLoaded", () => {
   initPasswordToggle("password");
 });
 
 document.getElementById("loginForm").addEventListener("submit", async (e) => {
   e.preventDefault();
-  const captchaResponse = grecaptcha.getResponse();
-  if (!captchaResponse) {
-    showModal("Please complete the reCAPTCHA.", "orange");
-    return;
-  }
+  // const captchaResponse = grecaptcha.getResponse();
+  // if (!captchaResponse) {
+  //   showModal("Please complete the reCAPTCHA.", "orange");
+  //   return;
+  // }
   const email = document.getElementById("email").value.trim();
   const password = document.getElementById("password").value;
 
@@ -42,25 +43,25 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
       return;
     }
 
-    window.location.href = "monitor.html";
+    window.location.href = "index.html";
 
   } catch (error) {
     const messages = {
       "auth/invalid-credential": {
         text: "Invalid email or password.",
-        color: "orange"
+        color: "error"
       },
       "auth/invalid-email": {
         text: "Please enter a properly formatted email address.",
-        color: "orange"
+        color: "error"
       },
       "auth/network-request-failed": {
         text: "Network error. Please check your internet connection or try disabling ad blockers.",
-        color: "red"
+        color: "error"
       },
       "auth/too-many-requests": {
         text: "Too many failed attempts. Please try again later.",
-        color: "red"
+        color: "error"
       }
     };
 
@@ -72,4 +73,8 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
     };
     showModal(msg.text, msg.color);
   }
+});
+
+document.getElementById('userButton')?.addEventListener('click', () => {
+  window.location.href = 'index.html';
 });

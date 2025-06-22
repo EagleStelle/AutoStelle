@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AutoStelle</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="login-container">
+    <h2>Login</h2>
+    <form id="loginForm" autocomplete="on">
+      <input type="email" id="email" name="email" placeholder="Email" />
+      <input type="password" id="password" name="password" placeholder="Password" />
+      <!-- <div class="g-recaptcha" data-sitekey="6LfqMDIrAAAAAAfN5rQGKS9WFK9dP1S4lFMwi8CS"></div> -->
+      <button type="submit">Log In</button>
+      <button type="button" id="userButton" class="outline">Continue as User</button>
+    </form>
+  </div>  
+
+  <!-- Modal copied from register -->
+  <div id="modal" class="modal hidden">
+    <div class="modal-backdrop"></div>
+    <div class="modal-content">
+      <p id="modalMessage"></p>
+      <button class="button outline" id="closeModal">Close</button>
+    </div>
+  </div>
+
+  <!-- Firebase & login script -->
+  <script type="module" src="scripts/login.js"></script>
+
+  <!-- reCAPTCHA script -->
+  <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+</body>
+</html>
