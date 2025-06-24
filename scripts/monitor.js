@@ -290,6 +290,41 @@ async function setupRemoveUIDs() {
       searchInput?.addEventListener('input', updateList);
       sortSelect?.addEventListener('change', updateList);
       updateList();
+
+      // Panel Action Buttons
+      const bulkDeleteBtn = $('bulkDeleteBtn');
+      const selectAllBtn = $('selectAllBtn');
+      const deselectAllBtn = $('deselectAllBtn');
+
+      bulkDeleteBtn?.addEventListener('click', async () => {
+        const checked = Array.from(document.querySelectorAll('.uid-checkbox:checked'));
+        if (checked.length === 0) return;
+
+        if (!confirm(`Are you sure you want to delete ${checked.length} selected UID(s)?`)) return;
+
+        try {
+          for (const box of checked) {
+            const uid = box.value;
+            await remove(ref(db, `authorizedUIDs/${uid}`));
+          }
+          showModal(`${checked.length} UID(s) deleted`, 'success');
+        } catch (err) {
+          console.error('Bulk delete failed:', err);
+          showModal('Bulk delete failed.', 'error');
+        }
+      });
+
+      selectAllBtn?.addEventListener('click', () => {
+        const checkboxes = document.querySelectorAll('.uid-checkbox');
+        checkboxes.forEach(cb => cb.checked = true);
+        $('panelActions')?.classList.remove('hidden');
+      });
+
+      deselectAllBtn?.addEventListener('click', () => {
+        const checkboxes = document.querySelectorAll('.uid-checkbox');
+        checkboxes.forEach(cb => cb.checked = false);
+        $('panelActions')?.classList.add('hidden');
+      });
     });
 
   } catch (err) {
