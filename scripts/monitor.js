@@ -13,7 +13,8 @@ import { signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/
 // DOM helper
 const $ = id => document.getElementById(id);
 
-// Grab elements once
+console.log("[monitor.js] Script loaded");
+
 const modeToggleBtn = document.getElementById("modeToggle");
 const mainContainer = document.getElementById("mainContainer");
 const adminContainer = document.getElementById("adminContainer");
@@ -21,6 +22,7 @@ const adminContainer = document.getElementById("adminContainer");
 if (modeToggleBtn && mainContainer && adminContainer) {
   modeToggleBtn.addEventListener("click", () => {
     const isAdminMode = !adminContainer.classList.contains("hidden");
+    console.log(`Mode toggled. Admin mode: ${!isAdminMode}`);
 
     if (isAdminMode) {
       adminContainer.classList.add("hidden");
@@ -44,62 +46,63 @@ const closeRemoveModalBtn = $('closeRemoveModalBtn');
 const logoutBtn = $('logout');
 const controlPanel = $('controlPanel');
 
-// Utility: clear scanning state in database and stop listener
 let isScanning = false;
 let stopScan = null;
+
 async function clearScan() {
   isScanning = false;
+  console.log("[clearScan] Clearing scan flags in database...");
   try {
     await Promise.all([
       set(ref(db, 'scanMode'), false),
       set(ref(db, 'lastScannedUID'), "")
     ]);
+    console.log("[clearScan] Scan mode cleared");
   } catch (err) {
-    console.error('clearScan: failed to write DB flags', err);
+    console.error('[clearScan] Failed to write DB flags:', err);
   }
   if (typeof stopScan === 'function') {
+    console.log("[clearScan] Removing scan listener");
     stopScan();
     stopScan = null;
   }
 }
 
-// Reset input fields for reservation
 function resetInputFields() {
   const nameEl = document.getElementById("inputName");
   const plateEl = document.getElementById("inputPlate");
   if (nameEl) nameEl.value = "";
   if (plateEl) plateEl.value = "";
+  console.log("[resetInputFields] Inputs cleared");
 }
 
-// Logout setup
 function setupLogout() {
   if (!logoutBtn) return;
   logoutBtn.addEventListener('click', () => {
+    console.log("[Logout] Attempting sign out...");
     signOut(auth)
       .then(() => {
+        console.log("[Logout] Success. Redirecting...");
         window.location.href = 'index.html';
       })
-      .catch(err => console.error('Logout failed:', err));
+      .catch(err => console.error('[Logout] Failed:', err));
   });
 }
 
-// Reservation (authorize new UID)
 function setupReserve() {
   if (!reserveBtn) return;
 
   reserveBtn.addEventListener("click", () => {
-    // show the modal to input name & plate
-    showModal("addModal"); // assuming showModal takes the modal's ID
+    console.log("[Reserve] Opening addModal");
+    showModal("addModal");
   });
 
-  // rename to avoid shadowing
   const confirmAddBtn = document.getElementById("confirmAdd");
   const cancelAddBtn = document.getElementById("cancelAdd");
 
-  // Confirm reservation: ask user to scan tag
   confirmAddBtn?.addEventListener("click", async () => {
     if (!auth.currentUser) {
-      console.warn('User not authenticated');
+      console.warn('[Reserve] No authenticated user');
       return;
     }
 
@@ -107,6 +110,8 @@ function setupReserve() {
     const plateInput = document.getElementById("inputPlate");
     const name = nameInput?.value.trim();
     const plate = plateInput?.value.trim();
+
+    console.log(`[Reserve] Input: name=${name}, plate=${plate}`);
 
     if (!name || !plate) {
       showModal("Please fill all fields.", "error");
@@ -117,9 +122,11 @@ function setupReserve() {
     showModal("Please scan a tag to reserve.", "info");
 
     try {
+      console.log("[Reserve] Enabling scan mode...");
       await set(ref(db, "scanMode"), true);
+      console.log("[Reserve] Scan mode enabled");
     } catch (err) {
-      console.error('Failed to start scan mode', err);
+      console.error('[Reserve] Failed to start scan mode:', err);
       showModal("Failed to start scan mode.", "error");
       return;
     }
@@ -127,22 +134,55 @@ function setupReserve() {
     isScanning = true;
     const scannedRef = ref(db, "lastScannedUID");
 
-    // onValue returns an unsubscribe function
+    console.log("[Reserve] Listening to lastScannedUID...");
     stopScan = onValue(scannedRef, async snap => {
       const uid = snap.val();
+      console.log("[Reserve] onValue received UID:", uid);
       if (isScanning && uid) {
         try {
-          await set(ref(db, `authorizedUIDs/${uid}`), {
-            allowed: true,   // ✅ This aligns with ESP32 expectations
-            name,
-            plate
+        const authorizedRef = ref(db, "authorizedUIDs");
+        const snapshot = await get(authorizedRef);
+        const existingUIDs = snapshot.exists() ? snapshot.val() : {};
+
+        let nameExists = false;
+        let plateExists = false;
+
+        for (const [existingUID, data] of Object.entries(existingUIDs)) {
+          if (existingUID === uid) continue; // Skip same UID
+          if (data.name === name) nameExists = true;
+          if (data.plate === plate) plateExists = true;
+        }
+
+        if (existingUIDs[uid]) {
+          showModal(`UID ${uid} is already registered.`, "error", {
+            buttonLabel: "Okay",
+            autoClose: true,
+            autoCloseDelay: 2500
           });
+          return;
+        }
+
+        if (nameExists || plateExists) {
+          showModal(`Name or plate already registered under a different UID.`, "error", {
+            buttonLabel: "Okay",
+            autoClose: true,
+            autoCloseDelay: 2500
+          });
+          return;
+        }
+
+        // Safe to save new UID
+        await set(ref(db, `authorizedUIDs/${uid}`), {
+          allowed: true,
+          name,
+          plate
+        });
+          console.log(`[Reserve] UID ${uid} written to DB`);
           showModal(`UID ${uid} authorized`, "success");
         } catch (err) {
-          console.error('Error writing authorizedUIDs', err);
+          console.error('[Reserve] Failed to write authorized UID:', err);
           showModal("Failed to authorize UID.", "error");
         }
-        // Delay then cleanup
         setTimeout(async () => {
           closeModal(); 
           await clearScan();
@@ -153,85 +193,111 @@ function setupReserve() {
   });
 
   cancelAddBtn?.addEventListener("click", () => {
+    console.log("[Reserve] Cancel clicked");
     closeModal("addModal");
     resetInputFields();
   });
 }
 
-// Cancel scanning early
 function setupCancelScan() {
   if (!cancelScanBtn) return;
   cancelScanBtn.addEventListener('click', async () => {
+    console.log("[CancelScan] User cancelled scan");
     closeModal(); 
     await clearScan();
     resetInputFields();
   });
 }
 
-// Remove UIDs
-function setupRemoveUIDs() {
-  if (!uidList || !bulkBtn || !closeRemoveModalBtn) return;
+// Helper: Waits until a DOM element exists
+function waitForElement(selector, timeout = 5000) {
+  return new Promise((resolve, reject) => {
+    const element = document.querySelector(selector);
+    if (element) return resolve(element);
 
-  const panelActions = document.getElementById("panelActions");
+    const observer = new MutationObserver(() => {
+      const el = document.querySelector(selector);
+      if (el) {
+        observer.disconnect();
+        resolve(el);
+      }
+    });
 
-  uidList.innerHTML = '<p>Loading...</p>';
+    observer.observe(document.body, { childList: true, subtree: true });
 
-  get(ref(db, 'authorizedUIDs'))
-    .then((snap) => {
-      const uids = snap.exists() ? snap.val() : {};
+    setTimeout(() => {
+      observer.disconnect();
+      reject(new Error(`Element ${selector} not found in time`));
+    }, timeout);
+  });
+}
 
-      if (!uids || !Object.keys(uids).length) {
-        uidList.innerHTML = '<p>No reserved UIDs.</p>';
+async function setupRemoveUIDs() {
+  console.log("setupRemoveUIDs: waiting for elements...");
+
+  try {
+    const uidList = await waitForElement("#uidList");
+    const bulkBtn = await waitForElement("#bulkDeleteBtn");
+    const closeBtn = await waitForElement("#closeRemovePanelBtn");
+    const panelActions = document.getElementById("panelActions");
+
+    uidList.innerHTML = "<p>Loading...</p>";
+    console.log("Fetching authorizedUIDs from database...");
+
+    onValue(ref(db, "authorizedUIDs"), (snap) => {
+      if (!snap.exists()) {
+        uidList.innerHTML = "<p>No reserved UIDs.</p>";
         return;
       }
 
-      uidList.innerHTML = '';
+      const uids = snap.val();
+      uidList.innerHTML = "";
+
       for (const [uid, info] of Object.entries(uids)) {
-        const name = info.name || 'Unnamed';
-        const plate = info.plate || 'No Plate';
+        const name = info.name || "Unnamed";
+        const plate = info.plate || "No Plate";
 
-        const card = document.createElement('div');
-        card.className = 'uid-card';
+        const card = document.createElement("div");
+        card.className = "uid-card";
 
-        const checkbox = document.createElement('input');
-        checkbox.type = 'checkbox';
-        checkbox.className = 'uid-checkbox';
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.className = "uid-checkbox";
         checkbox.value = uid;
 
-        checkbox.addEventListener('change', () => {
-          const anyChecked = document.querySelectorAll('.uid-checkbox:checked').length > 0;
-          panelActions.classList.toggle('hidden', !anyChecked);
+        checkbox.addEventListener("change", () => {
+          const anyChecked = document.querySelectorAll(".uid-checkbox:checked").length > 0;
+          panelActions.classList.toggle("hidden", !anyChecked);
         });
 
-        const infoWrapper = document.createElement('div');
-        infoWrapper.className = 'uid-info';
+        const infoWrapper = document.createElement("div");
+        infoWrapper.className = "uid-info";
 
-        const uidField = document.createElement('div');
-        uidField.className = 'uid-field';
+        const uidField = document.createElement("div");
+        uidField.className = "uid-field";
         uidField.innerHTML = `<strong>${uid}</strong>`;
 
-        const nameField = document.createElement('div');
-        nameField.className = 'uid-field';
+        const nameField = document.createElement("div");
+        nameField.className = "uid-field";
         nameField.textContent = name;
 
-        const plateField = document.createElement('div');
-        plateField.className = 'uid-field';
+        const plateField = document.createElement("div");
+        plateField.className = "uid-field";
         plateField.textContent = plate;
 
         infoWrapper.append(uidField, nameField, plateField);
 
-        const delBtn = document.createElement('button');
-        delBtn.className = 'delete-btn';
+        const delBtn = document.createElement("button");
+        delBtn.className = "delete-btn";
         delBtn.dataset.uid = uid;
         delBtn.innerHTML = '<i class="fa-solid fa-trash"></i>';
 
-        delBtn.addEventListener('click', async () => {
+        delBtn.addEventListener("click", async () => {
           try {
             await remove(ref(db, `authorizedUIDs/${uid}`));
-            card.remove();
             showModal(`UID ${uid} removed`, "success");
           } catch (err) {
-            console.error('Failed to remove UID', err);
+            console.error("Failed to remove UID", err);
             showModal("Failed to remove UID.", "error");
           }
         });
@@ -239,70 +305,104 @@ function setupRemoveUIDs() {
         card.append(checkbox, infoWrapper, delBtn);
         uidList.appendChild(card);
       }
-    })
-    .catch((err) => {
-      console.error("Failed to load UIDs:", err);
-      uidList.innerHTML = '<p>Error fetching UIDs.</p>';
     });
 
-  bulkBtn.addEventListener('click', async () => {
-    const boxes = document.querySelectorAll('.uid-checkbox:checked');
-    if (!boxes.length) {
-      showModal("No UIDs selected.", "info");
+    console.log("Firebase response received");
+
+    if (!snap.exists()) {
+      console.warn("No authorizedUIDs found in database");
+      uidList.innerHTML = "<p>No reserved UIDs.</p>";
       return;
     }
 
-    for (const box of boxes) {
-      const uid = box.value;
-      try {
-        await remove(ref(db, `authorizedUIDs/${uid}`));
-        box.closest('.uid-card')?.remove();
-      } catch (err) {
-        console.error(`Failed to remove UID ${uid}`, err);
-      }
+    const uids = snap.val();
+    console.log("UIDs fetched:", uids);
+
+    uidList.innerHTML = "";
+    for (const [uid, info] of Object.entries(uids)) {
+      const name = info.name || "Unnamed";
+      const plate = info.plate || "No Plate";
+
+      const card = document.createElement("div");
+      card.className = "uid-card";
+
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.className = "uid-checkbox";
+      checkbox.value = uid;
+
+      checkbox.addEventListener("change", () => {
+        const anyChecked = document.querySelectorAll(".uid-checkbox:checked").length > 0;
+        panelActions.classList.toggle("hidden", !anyChecked);
+      });
+
+      const infoWrapper = document.createElement("div");
+      infoWrapper.className = "uid-info";
+
+      const uidField = document.createElement("div");
+      uidField.className = "uid-field";
+      uidField.innerHTML = `<strong>${uid}</strong>`;
+
+      const nameField = document.createElement("div");
+      nameField.className = "uid-field";
+      nameField.textContent = name;
+
+      const plateField = document.createElement("div");
+      plateField.className = "uid-field";
+      plateField.textContent = plate;
+
+      infoWrapper.append(uidField, nameField, plateField);
+
+      const delBtn = document.createElement("button");
+      delBtn.className = "delete-btn";
+      delBtn.dataset.uid = uid;
+      delBtn.innerHTML = '<i class="fa-solid fa-trash"></i>';
+
+      delBtn.addEventListener("click", async () => {
+        try {
+          await remove(ref(db, `authorizedUIDs/${uid}`));
+          card.remove();
+          showModal(`UID ${uid} removed`, "success");
+        } catch (err) {
+          console.error("Failed to remove UID", err);
+          showModal("Failed to remove UID.", "error");
+        }
+      });
+
+      card.append(checkbox, infoWrapper, delBtn);
+      uidList.appendChild(card);
     }
-
-    panelActions.classList.add('hidden');
-    showModal("Selected UIDs removed.", "success");
-  });
-
-  closeRemoveModalBtn.addEventListener('click', () => {
-    document.querySelectorAll('.uid-checkbox').forEach(cb => cb.checked = false);
-    panelActions.classList.add('hidden');
-  });
+  } catch (err) {
+    console.warn("setupRemoveUIDs failed:", err.message);
+  }
 }
 
-// Wait for auth state, then initialize UI
+
 function authReady() {
   return new Promise(resolve => {
     const unsubscribe = onAuthStateChanged(auth, user => {
+      console.log("[authReady] Auth state changed. User:", user?.email || "None");
       if (user) {
         controlPanel?.classList.remove('hidden');
       } else {
         controlPanel?.classList.add('hidden');
       }
-      // Set up handlers once user state known
       setupLogout();
       setupReserve();
       setupCancelScan();
       setupRemoveUIDs();
-
-      unsubscribe(); // stop listening further in this promise
+      unsubscribe();
       resolve(user);
     });
   });
 }
 
-// On load
 (async () => {
   try {
+    console.log("[Init] Waiting for auth...");
     await authReady();
-    // Optionally you can re-run setups if needed, but authReady already did
-    setupLogout();
-    setupReserve();
-    setupCancelScan();
-    setupRemoveUIDs();
+    console.log("[Init] Auth complete");
   } catch (err) {
-    console.error('Initialization error:', err);
+    console.error('[Init] Initialization error:', err);
   }
 })();

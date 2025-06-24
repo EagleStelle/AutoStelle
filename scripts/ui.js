@@ -1,36 +1,40 @@
 // ui.js
-export function showModal(arg, color = "success") {
+export function showModal(arg, color = "success", options = {}) {
   let modal;
-
   const colorMap = {
     success: "var(--peach-fuzz)",
     error: "var(--blush-mist)",
     info: "var(--lavender-haze)",
     default: "var(--mauve-mist)",
   };
-
   const colorKeys = Object.keys(colorMap);
+  const isTextMessage = typeof arg === "string" && !document.getElementById(arg);
 
-  if (typeof arg === "string") {
-    // If it's a text message AND a valid color is provided
-    if (colorKeys.includes(color) && !document.getElementById(arg)) {
-      modal = document.getElementById("modal");
-      const modalMessage = document.getElementById("modalMessage");
+  if (isTextMessage) {
+    modal = document.getElementById("modal");
+    const modalMessage = document.getElementById("modalMessage");
+    const modalBtn = document.getElementById("modalButton"); // Add this button in your HTML
 
-      if (modalMessage) {
-        modalMessage.textContent = arg;
-        modalMessage.style.color = colorMap[color] || colorMap.default;
-      }
-    } else {
-      // Otherwise treat string as modal ID
-      modal = document.getElementById(arg);
+    if (modalMessage) {
+      modalMessage.textContent = arg;
+      modalMessage.style.color = colorMap[color] || colorMap.default;
     }
-  } else if (arg instanceof HTMLElement) {
-    modal = arg;
+
+    if (modalBtn) {
+      modalBtn.textContent = options.buttonLabel || "Cancel";
+      modalBtn.onclick = () => closeModal();
+    }
+
+    if (options.autoClose) {
+      setTimeout(() => {
+        closeModal();
+      }, options.autoCloseDelay || 2000);
+    }
+  } else {
+    modal = typeof arg === "string" ? document.getElementById(arg) : arg;
   }
 
   if (!modal) return;
-
   modal.classList.remove("hidden");
   modal.classList.add("show");
 }
