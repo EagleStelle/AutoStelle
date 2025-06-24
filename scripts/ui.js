@@ -35,7 +35,6 @@ export function showModal(arg, color = "success") {
   modal.classList.add("show");
 }
 
-
 export function closeModal(modalId = null) {
   const modals = modalId
     ? [document.getElementById(modalId)]

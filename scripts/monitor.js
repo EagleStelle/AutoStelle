@@ -14,11 +14,30 @@ import { signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/
 const $ = id => document.getElementById(id);
 
 // Grab elements once
+const modeToggleBtn = document.getElementById("modeToggle");
+const mainContainer = document.getElementById("mainContainer");
+const adminContainer = document.getElementById("adminContainer");
+
+if (modeToggleBtn && mainContainer && adminContainer) {
+  modeToggleBtn.addEventListener("click", () => {
+    const isAdminMode = !adminContainer.classList.contains("hidden");
+
+    if (isAdminMode) {
+      adminContainer.classList.add("hidden");
+      mainContainer.classList.remove("hidden");
+      modeToggleBtn.textContent = "Admin Mode";
+    } else {
+      adminContainer.classList.remove("hidden");
+      mainContainer.classList.add("hidden");
+      modeToggleBtn.textContent = "User Mode";
+    }
+  });
+}
+
 const reserveBtn = $('reserve');
 const removeBtn = $('remove');
 const cancelScanBtn = $('cancelScan');
 const addModal = $('addModal');
-const removeModal = $('removeModal');
 const uidList = $('uidList');
 const bulkBtn = $('bulkDeleteBtn');
 const closeRemoveModalBtn = $('closeRemoveModalBtn');
@@ -151,14 +170,14 @@ function setupCancelScan() {
 
 // Remove UIDs
 function setupRemoveUIDs() {
-  if (!removeBtn || !uidList || !removeModal) return;
+  if (!uidList || !bulkBtn || !closeRemoveModalBtn) return;
 
-  removeBtn.addEventListener('click', async () => {
-    showModal("removeModal"); // pass modal ID
-    uidList.innerHTML = '<p>Loading...</p>';
+  const panelActions = document.getElementById("panelActions");
 
-    try {
-      const snap = await get(ref(db, 'authorizedUIDs'));
+  uidList.innerHTML = '<p>Loading...</p>';
+
+  get(ref(db, 'authorizedUIDs'))
+    .then((snap) => {
       const uids = snap.exists() ? snap.val() : {};
 
       if (!uids || !Object.keys(uids).length) {
@@ -173,19 +192,40 @@ function setupRemoveUIDs() {
 
         const card = document.createElement('div');
         card.className = 'uid-card';
-        card.innerHTML = `
-          <label>
-            <input type="checkbox" class="uid-checkbox" value="${uid}">
-            <span><strong>${uid}</strong> - ${name} (${plate})</span>
-          </label>
-          <button class="delete-btn" data-uid="${uid}">
-            <i class="fa-solid fa-trash"></i>
-          </button>
-        `;
 
-        // delete single UID
-        const delBtn = card.querySelector('.delete-btn');
-        delBtn?.addEventListener('click', async () => {
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.className = 'uid-checkbox';
+        checkbox.value = uid;
+
+        checkbox.addEventListener('change', () => {
+          const anyChecked = document.querySelectorAll('.uid-checkbox:checked').length > 0;
+          panelActions.classList.toggle('hidden', !anyChecked);
+        });
+
+        const infoWrapper = document.createElement('div');
+        infoWrapper.className = 'uid-info';
+
+        const uidField = document.createElement('div');
+        uidField.className = 'uid-field';
+        uidField.innerHTML = `<strong>${uid}</strong>`;
+
+        const nameField = document.createElement('div');
+        nameField.className = 'uid-field';
+        nameField.textContent = name;
+
+        const plateField = document.createElement('div');
+        plateField.className = 'uid-field';
+        plateField.textContent = plate;
+
+        infoWrapper.append(uidField, nameField, plateField);
+
+        const delBtn = document.createElement('button');
+        delBtn.className = 'delete-btn';
+        delBtn.dataset.uid = uid;
+        delBtn.innerHTML = '<i class="fa-solid fa-trash"></i>';
+
+        delBtn.addEventListener('click', async () => {
           try {
             await remove(ref(db, `authorizedUIDs/${uid}`));
             card.remove();
@@ -196,21 +236,22 @@ function setupRemoveUIDs() {
           }
         });
 
+        card.append(checkbox, infoWrapper, delBtn);
         uidList.appendChild(card);
       }
-    } catch (err) {
+    })
+    .catch((err) => {
       console.error("Failed to load UIDs:", err);
       uidList.innerHTML = '<p>Error fetching UIDs.</p>';
-    }
-  });
+    });
 
-  // bulk delete
-  bulkBtn?.addEventListener('click', async () => {
+  bulkBtn.addEventListener('click', async () => {
     const boxes = document.querySelectorAll('.uid-checkbox:checked');
     if (!boxes.length) {
       showModal("No UIDs selected.", "info");
       return;
     }
+
     for (const box of boxes) {
       const uid = box.value;
       try {
@@ -220,10 +261,15 @@ function setupRemoveUIDs() {
         console.error(`Failed to remove UID ${uid}`, err);
       }
     }
+
+    panelActions.classList.add('hidden');
     showModal("Selected UIDs removed.", "success");
   });
 
-  closeRemoveModalBtn?.addEventListener('click', () => closeModal());
+  closeRemoveModalBtn.addEventListener('click', () => {
+    document.querySelectorAll('.uid-checkbox').forEach(cb => cb.checked = false);
+    panelActions.classList.add('hidden');
+  });
 }
 
 // Wait for auth state, then initialize UI

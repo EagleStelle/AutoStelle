@@ -16,7 +16,7 @@ onAuthStateChanged(auth, (user) => {
   }
 });
 
-document.getElementById("closeModal").addEventListener("click", closeModal);
+document.getElementById("closeModal").addEventListener("click", () => closeModal("modal"));
 document.addEventListener("DOMContentLoaded", () => {
   initPasswordToggle("password");
 });

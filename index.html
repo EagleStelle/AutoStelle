@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 <body>
-  <div class="main-container">
+  <div class="container main" id="mainContainer">
     <div class="parking-area normal-parking">
       <h2>Normal Parking</h2>
       <div class="slot-grid" id="normalSlots">
@@ -30,6 +30,67 @@
     </div>
   </div>
 
+  <div class="container admin hidden" id="adminContainer">
+    <div class="parking-area admin-parking">
+      <h2>Admin Panel</h2>
+
+      <div class="admin-toolbar">
+        <div class="search-wrapper">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input type="text" id="searchInput" placeholder="Search..." />
+        </div>
+
+        <div class="select-wrapper">
+          <i class="fa-solid fa-arrow-down-a-z"></i>
+          <select id="sortSelect">
+            <option value="name">Sort by Name</option>
+            <option value="uid">Sort by UID</option>
+            <option value="uid">Sort by License</option>
+            <option value="newest">Newest First</option>
+            <option value="oldest">Oldest First</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="uid-list-wrapper">
+        <div class="uid-card uid-header">
+          <input type="checkbox" class="uid-checkbox hidden" disabled>
+          <div class="uid-info">
+            <div class="uid-field">UID</div>
+            <div class="uid-field">Name</div>
+            <div class="uid-field">License Plate</div>
+          </div>
+          <button class="delete-btn hidden" disabled>
+            <i class="fa-solid fa-trash"></i>
+          </button>
+        </div>
+
+        <div id="uidList" class="uid-list"></div>
+      </div>
+
+      <div class="panel-actions hidden" id="panelActions">
+        <button class="danger" id="bulkDeleteBtn">
+          <i class="fa-solid fa-trash"></i> Delete Selected
+        </button>
+        <button class="outline" id="closeRemovePanelBtn">
+          <i class="fa-solid fa-xmark"></i> Cancel
+        </button>
+      </div>
+
+      <div class="admin-buttons left">
+        <button class="danger" id="logout">
+          <i class="fa-solid fa-right-from-bracket"></i> Logout
+        </button>
+      </div>
+
+      <div class="admin-buttons right">
+        <button id="reserve">
+          <i class="fa-solid fa-plus"></i> Reserve
+        </button>
+      </div>
+    </div>
+  </div>
+
   <footer class="footer">
     <div class="copyright">
       <a href="https://github.com/EagleStelle" target="_blank" class="github-link">
@@ -43,16 +104,8 @@
       <p>Intelligent Parking with Stellar Precision</p>
     </div>
 
-    <div class="control hidden" id="controlPanel">
-      <button class="danger" id="logout">
-        <i class="fa-solid fa-right-from-bracket"></i> Logout
-      </button>
-      <button id="reserve">
-        <i class="fa-solid fa-plus"></i> Reserve
-      </button>
-      <button id="remove">
-        <i class="fa-solid fa-trash"></i> Remove
-      </button>
+    <div class="control" id="controlPanel">
+      <button id="modeToggle">Admin Mode</button>
     </div>
   </footer>
 
@@ -67,6 +120,7 @@
 
   <!-- Add UID Modal -->
   <div id="addModal" class="modal hidden">
+    <div class="modal-backdrop"></div>
     <div class="modal-content">
       <h2>Add New Reservation</h2>
       <input type="text" id="inputName" placeholder="Enter name" />
@@ -75,23 +129,6 @@
       <div class="modal-actions">
         <button id="confirmAdd">Confirm</button>
         <button id="cancelAdd">Cancel</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Remove UID Modal -->
-  <div id="removeModal" class="modal hidden">
-    <div class="modal-backdrop"></div>
-    <div class="modal-content">
-      <h3>Remove Reserved UIDs</h3>
-      <div id="uidList" class="uid-list"></div>
-      <div class="modal-actions">
-        <button class="danger" id="bulkDeleteBtn">
-          <i class="fa-solid fa-trash"></i> Delete Selected
-        </button>
-        <button class="outline" id="closeRemoveModalBtn">
-          <i class="fa-solid fa-xmark"></i> Cancel
-        </button>
       </div>
     </div>
   </div>
