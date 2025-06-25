@@ -255,198 +255,178 @@ function waitForElement(selector, timeout = 5000) {
 }
 
 async function setupRemoveUIDs() {
-  console.log("setupRemoveUIDs: waiting for elements...");
+  console.log("setupRemoveUIDs: waiting for elements…");
 
   try {
     // Wait for the UI elements:
-    const uidList = await waitForElement("#uidList");
-    const bulkBtn = await waitForElement("#bulkDeleteBtn");
-    const selectAllBtn = await waitForElement("#selectAllBtn");
-    const panelActions = document.getElementById("panelActions");
+    const uidList       = await waitForElement("#uidList");
+    const bulkBtn       = await waitForElement("#bulkDeleteBtn");
+    const selectAllBtn  = await waitForElement("#selectAllBtn");
+    const deselectAllBtn= await waitForElement("#deselectAllBtn");
+    const panelDiv      = document.getElementById("panelActions");
+    const adminDiv      = document.getElementById("adminButtons");
+    const searchInput   = document.getElementById("searchInput");
+    const sortSelect    = document.getElementById("sortSelect");
 
-    // Search and sort inputs:
-    const searchInput = document.getElementById("searchInput");
-    const sortSelect = document.getElementById("sortSelect");
-
-    // Keep the latest snapshot entries here
     let entries = [];
 
-    // Helper: filter & sort entries, then render into uidList
-    function renderList(entriesArray) {
-      const q = searchInput?.value.trim().toLowerCase() || "";
-      const sortBy = sortSelect?.value || "name";
+    function showPanel() {
+      panelDiv.classList.remove("hidden");
+      adminDiv.classList.add("hidden");
+    }
+    function showAdmin() {
+      panelDiv.classList.add("hidden");
+      adminDiv.classList.remove("hidden");
+    }
 
-      // 1. Filter
-      let filtered = entriesArray.filter(item => {
-        // Check if any field contains the query substring
+    function renderList(list) {
+      const q      = (searchInput.value || "").trim().toLowerCase();
+      const sortBy = sortSelect.value || "name";
+
+      // filter
+      let filtered = list.filter(item => {
         if (!q) return true;
-        // Search in uid, name, plate
         return (
           item.uid.toLowerCase().includes(q) ||
-          (item.name && item.name.toLowerCase().includes(q)) ||
-          (item.plate && item.plate.toLowerCase().includes(q))
+          (item.name  || "").toLowerCase().includes(q) ||
+          (item.plate || "").toLowerCase().includes(q)
         );
       });
 
-      // 2. Sort
+      // sort
       filtered.sort((a, b) => {
         switch (sortBy) {
           case "name":
-            // alphabetical by name (empty names last)
-            return (a.name || "").localeCompare(b.name || "", undefined, { sensitivity: 'base' });
+            return (a.name||"").localeCompare(b.name||"", undefined, {sensitivity:"base"});
           case "uid":
-            return a.uid.localeCompare(b.uid, undefined, { sensitivity: 'base' });
+            return a.uid.localeCompare(b.uid, undefined, {sensitivity:"base"});
           case "plate":
-            return (a.plate || "").localeCompare(b.plate || "", undefined, { sensitivity: 'base' });
+            return (a.plate||"").localeCompare(b.plate||"", undefined, {sensitivity:"base"});
           case "newest":
-            // newest first: higher timestamp first
-            return (b.timestamp || 0) - (a.timestamp || 0);
+            return (b.timestamp||0) - (a.timestamp||0);
           case "oldest":
-            return (a.timestamp || 0) - (b.timestamp || 0);
+            return (a.timestamp||0) - (b.timestamp||0);
           default:
             return 0;
         }
       });
 
-      // 3. Render
+      uidList.innerHTML = "";
       if (filtered.length === 0) {
         uidList.innerHTML = "<p>No matching UIDs.</p>";
-        panelActions.classList.add("hidden");
+        showAdmin();
         return;
       }
 
-      // Build HTML
-      uidList.innerHTML = "";
+      // build cards
       for (const item of filtered) {
-        const { uid, name, plate } = item;
         const card = document.createElement("div");
         card.className = "uid-card";
 
-        const checkbox = document.createElement("input");
-        checkbox.type = "checkbox";
-        checkbox.className = "uid-checkbox";
-        checkbox.value = uid;
+        const cb = document.createElement("input");
+        cb.type  = "checkbox";
+        cb.className = "uid-checkbox";
+        cb.value = item.uid;
 
-        checkbox.addEventListener("change", () => {
-          const anyChecked = document.querySelectorAll(".uid-checkbox:checked").length > 0;
-          panelActions.classList.toggle("hidden", !anyChecked);
+        cb.addEventListener("change", () => {
+          const any = document.querySelectorAll(".uid-checkbox:checked").length > 0;
+          any ? showPanel() : showAdmin();
         });
 
-        const infoWrapper = document.createElement("div");
-        infoWrapper.className = "uid-info";
-        infoWrapper.innerHTML = `
-          <div class="uid-field"><strong>${uid}</strong></div>
-          <div class="uid-field">${name || ""}</div>
-          <div class="uid-field">${plate || ""}</div>
+        const info = document.createElement("div");
+        info.className = "uid-info";
+        info.innerHTML = `
+          <div class="uid-field"><strong>${item.uid}</strong></div>
+          <div class="uid-field">${item.name||""}</div>
+          <div class="uid-field">${item.plate||""}</div>
         `;
 
-        const delBtn = document.createElement("button");
-        delBtn.className = "delete-btn";
-        delBtn.dataset.uid = uid;
-        delBtn.innerHTML = '<i class="fa-solid fa-trash"></i>';
-        delBtn.addEventListener("click", async () => {
+        const del = document.createElement("button");
+        del.className = "delete-btn";
+        del.dataset.uid = item.uid;
+        del.innerHTML = '<i class="fa-solid fa-trash"></i>';
+        del.addEventListener("click", async () => {
           try {
-            await remove(ref(db, `authorizedUIDs/${uid}`));
-            showModal(`UID ${uid} removed`, "success", {
+            await remove(ref(db, `authorizedUIDs/${item.uid}`));
+            showModal(`UID ${item.uid} removed`, "success", {
               buttonLabel: "Okay",
               autoClose: true,
               autoCloseDelay: 1500
             });
-            // onValue listener will re-fetch and re-render entries
-          } catch (err) {
-            console.error("Failed to remove UID", err);
+          } catch (e) {
+            console.error(e);
             showModal("Failed to remove UID.", "error");
           }
         });
 
-        card.append(checkbox, infoWrapper, delBtn);
+        card.append(cb, info, del);
         uidList.appendChild(card);
       }
 
-      // After rendering, if any checkbox is already checked (due to e.g. previous state), show panel
-      const anyCheckedNow = document.querySelectorAll(".uid-checkbox:checked").length > 0;
-      panelActions.classList.toggle("hidden", !anyCheckedNow);
+      // after render, decide which bar to show
+      const anyChecked = document.querySelectorAll(".uid-checkbox:checked").length > 0;
+      anyChecked ? showPanel() : showAdmin();
     }
 
-    // Attach listeners on searchInput and sortSelect to re-render when changed
-    if (searchInput) {
-      searchInput.addEventListener("input", () => {
-        renderList(entries);
-      });
-    }
-    if (sortSelect) {
-      sortSelect.addEventListener("change", () => {
-        renderList(entries);
-      });
-    }
+    // react to search/sort
+    searchInput.addEventListener("input",  () => renderList(entries));
+    sortSelect.addEventListener("change", () => renderList(entries));
 
-    // Listen to Firebase changes
-    onValue(ref(db, "authorizedUIDs"), (snap) => {
+    // Firebase listener
+    onValue(ref(db, "authorizedUIDs"), snap => {
       if (!snap.exists()) {
         entries = [];
         uidList.innerHTML = "<p>No reserved UIDs.</p>";
-        panelActions.classList.add("hidden");
+        showAdmin();
         return;
       }
-      const data = snap.val();
-      // Build entries array: include timestamp if present
-      entries = Object.entries(data).map(([uid, info]) => ({
+      entries = Object.entries(snap.val()).map(([uid, info]) => ({
         uid,
         name: info.name || "",
         plate: info.plate || "",
         timestamp: info.timestamp || 0
       }));
-      // Render with current search & sort
       renderList(entries);
     });
 
-    // Bulk delete
+    // bulk delete
     bulkBtn.addEventListener("click", async () => {
-      const checkedBoxes = document.querySelectorAll(".uid-checkbox:checked");
-      if (!checkedBoxes.length) return;
-      if (!confirm(`Delete ${checkedBoxes.length} selected UID(s)?`)) return;
-
+      const checked = document.querySelectorAll(".uid-checkbox:checked");
+      if (!checked.length || !confirm(`Delete ${checked.length} UIDs?`)) return;
       try {
-        const deletes = Array.from(checkedBoxes).map(cb => {
-          const uid = cb.value;
-          return remove(ref(db, `authorizedUIDs/${uid}`));
-        });
-        await Promise.all(deletes);
-
-        showModal(`${checkedBoxes.length} UID(s) removed.`, "success", {
+        await Promise.all(
+          Array.from(checked).map(cb =>
+            remove(ref(db, `authorizedUIDs/${cb.value}`))
+          )
+        );
+        showModal(`${checked.length} UID(s) removed.`, "success", {
           buttonLabel: "Okay",
           autoClose: true,
           autoCloseDelay: 1500
         });
-        panelActions.classList.add("hidden");
-        // onValue listener will re-render entries
-      } catch (err) {
-        console.error("Bulk delete failed:", err);
-        showModal("Failed to delete selected UID(s).", "error");
+        showAdmin();
+      } catch (e) {
+        console.error(e);
+        showModal("Bulk delete failed.", "error");
       }
     });
 
-    // Utility: Get all selectable (non-disabled) checkboxes
-    const getSelectableCheckboxes = () =>
-      Array.from(document.querySelectorAll(".uid-checkbox:not(:disabled)"));
-
-    // Deselect All
-    deselectAllBtn.addEventListener("click", () => {
-      getSelectableCheckboxes().forEach(cb => cb.checked = false);
-      panelActions.classList.add("hidden");
+    // select/deselect all
+    selectAllBtn.addEventListener("click", () => {
+      const all = document.querySelectorAll(".uid-checkbox:not(:disabled)");
+      if (!all.length) return;
+      all.forEach(cb => cb.checked = true);
+      showPanel();
     });
 
-    // Select All
-    selectAllBtn.addEventListener("click", () => {
-      const checkboxes = getSelectableCheckboxes();
-      if (!checkboxes.length) return;
-
-      checkboxes.forEach(cb => cb.checked = true);
-      panelActions.classList.remove("hidden");
+    deselectAllBtn.addEventListener("click", () => {
+      document.querySelectorAll(".uid-checkbox:not(:disabled)")
+              .forEach(cb => cb.checked = false);
+      showAdmin();
     });
 
   } catch (err) {
-    console.warn("setupRemoveUIDs failed:", err.message);
+    console.warn("setupRemoveUIDs failed:", err);
   }
 }
 

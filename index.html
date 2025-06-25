@@ -48,44 +48,50 @@
         </div>
       </div>
 
-      <div class="uid-list-wrapper">
-        <div class="uid-card uid-header">
-          <input type="checkbox" class="uid-checkbox hidden" disabled>
-          <div class="uid-info">
-            <div class="uid-field">UID</div>
-            <div class="uid-field">Name</div>
-            <div class="uid-field">License Plate</div>
-          </div>
-          <button class="delete-btn hidden" disabled>
-            <i class="fa-solid fa-trash"></i>
-          </button>
+      <div class="uid-card uid-header">
+        <input type="checkbox" class="uid-checkbox hidden" disabled>
+        <div class="uid-info">
+          <div class="uid-field">UID</div>
+          <div class="uid-field">Name</div>
+          <div class="uid-field">License Plate</div>
         </div>
+        <button class="delete-btn hidden" disabled>
+          <i class="fa-solid fa-trash"></i>
+        </button>
+      </div>
 
+      <div class="uid-list-wrapper">
         <div id="uidList" class="uid-list"></div>
       </div>
 
-      <div class="panel-actions hidden" id="panelActions">
-        <button class="danger" id="bulkDeleteBtn">
-          <i class="fa-solid fa-trash"></i> Delete Selected
-        </button>
-        <button class="outline" id="selectAllBtn">
-          <i class="fa-solid fa-check-double"></i> Select All
-        </button>
-        <button class="outline" id="deselectAllBtn">
-          <i class="fa-solid fa-xmark"></i> Deselect All
-        </button>
-      </div>
+      <div class="admin-actions-wrapper" id="adminActionsWrapper">
+        <!-- Shown when items are selected -->
+        <div id="panelActions" class="hidden">
+          <button class="danger" id="bulkDeleteBtn">
+            <i class="fa-solid fa-trash"></i>
+            <span class="btn-text">Delete Selected</span>
+          </button>
+          <button class="outline" id="selectAllBtn">
+            <i class="fa-solid fa-check-double"></i>
+            <span class="btn-text">Select All</span>
+          </button>
+          <button class="outline" id="deselectAllBtn">
+            <i class="fa-solid fa-xmark"></i>
+            <span class="btn-text">Deselect All</span>
+          </button>
+        </div>
 
-      <div class="admin-buttons left">
-        <button class="danger" id="logout">
-          <i class="fa-solid fa-right-from-bracket"></i> Logout
-        </button>
-      </div>
-
-      <div class="admin-buttons right">
-        <button id="reserve">
-          <i class="fa-solid fa-plus"></i> Reserve
-        </button>
+        <!-- Default admin buttons -->
+        <div id="adminButtons">
+          <button class="danger" id="logout">
+            <i class="fa-solid fa-right-from-bracket"></i>
+            <span class="btn-text">Logout</span>
+          </button>
+          <button class="outline" id="reserve">
+            <i class="fa-solid fa-plus"></i>
+            <span class="btn-text">Reserve</span>
+          </button>
+        </div>
       </div>
     </div>
   </div>
