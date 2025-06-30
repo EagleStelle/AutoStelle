@@ -10,22 +10,28 @@
 <body>
   <div class="container main" id="mainContainer">
     <div class="parking-area normal-parking">
-      <h2>Normal Parking</h2>
+      <header><h2>Normal Parking</h2></header>
       <div class="slot-grid" id="normalSlots">
         <div class="slot">A1</div>
         <div class="slot">A2</div>
         <div class="slot">A3</div>
         <div class="slot">A4</div>
+        <div class="slot">A5</div>
+        <div class="slot">A6</div>
+        <!-- Add more if needed -->
       </div>
     </div>
 
     <div class="parking-area reserved-parking">
-      <h2>Reserved Parking</h2>
+      <header><h2>Reserved Parking</h2></header>
       <div class="slot-grid" id="reservedSlots">
         <div class="slot reserved">R1</div>
         <div class="slot reserved">R2</div>
         <div class="slot reserved">R3</div>
         <div class="slot reserved">R4</div>
+        <div class="slot reserved">R5</div>
+        <div class="slot reserved">R6</div>
+        <!-- Add more if needed -->
       </div>
     </div>
   </div>
@@ -48,23 +54,24 @@
         </div>
       </div>
 
-      <div class="uid-card uid-header">
-        <input type="checkbox" class="uid-checkbox hidden" disabled>
-        <div class="uid-info">
-          <div class="uid-field">UID</div>
-          <div class="uid-field">Name</div>
-          <div class="uid-field">License Plate</div>
+      <div class="uid-table">
+        <div class="uid-inner">
+          <div class="uid-header">
+            <input type="checkbox" class="uid-checkbox hidden" disabled />
+            <div class="uid-info">
+              <div class="uid-field">UID</div>
+              <div class="uid-field">Name</div>
+              <div class="uid-field">License Plate</div>
+            </div>
+            <button class="delete-btn hidden" disabled>
+              <i class="fa-solid fa-trash"></i>
+            </button>
+          </div>
+          <div id="uidList" class="uid-list"></div>
         </div>
-        <button class="delete-btn hidden" disabled>
-          <i class="fa-solid fa-trash"></i>
-        </button>
       </div>
 
-      <div class="uid-list-wrapper">
-        <div id="uidList" class="uid-list"></div>
-      </div>
-
-      <div class="admin-actions-wrapper" id="adminActionsWrapper">
+      <div class="admin-actions">
         <!-- Shown when items are selected -->
         <div id="panelActions" class="hidden">
           <button class="danger" id="bulkDeleteBtn">
@@ -109,8 +116,10 @@
       <p>Intelligent Parking with Stellar Precision</p>
     </div>
 
-    <div class="control" id="controlPanel">
-      <button id="modeToggle">Admin Mode</button>
+    <div class="control">
+      <button id="modeToggle" title="Switch Mode">
+        <i class="fas fa-gear"></i>
+      </button>
     </div>
   </footer>
 

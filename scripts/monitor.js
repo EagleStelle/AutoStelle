@@ -22,16 +22,16 @@ const adminContainer = document.getElementById("adminContainer");
 if (modeToggleBtn && mainContainer && adminContainer) {
   modeToggleBtn.addEventListener("click", () => {
     const isAdminMode = !adminContainer.classList.contains("hidden");
-    console.log(`Mode toggled. Admin mode: ${!isAdminMode}`);
+    const icon = modeToggleBtn.querySelector("i");
 
     if (isAdminMode) {
       adminContainer.classList.add("hidden");
       mainContainer.classList.remove("hidden");
-      modeToggleBtn.textContent = "Admin Mode";
+      icon.classList.replace("fa-user", "fa-gear"); // Switch to admin icon
     } else {
       adminContainer.classList.remove("hidden");
       mainContainer.classList.add("hidden");
-      modeToggleBtn.textContent = "User Mode";
+      icon.classList.replace("fa-gear", "fa-user"); // Switch to user icon
     }
   });
 }
@@ -430,6 +430,54 @@ async function setupRemoveUIDs() {
   }
 }
 
+function updateSlotUI(slotNumber, isOccupied) {
+  const slotMap = {
+    1: "A1",
+    2: "A2",
+    3: "A3",
+    4: "R1",
+    5: "R2",
+    6: "R3"
+  };
+
+  const label = slotMap[slotNumber];
+  console.log(`[updateSlotUI] slotNumber: ${slotNumber}, label: ${label}, isOccupied: ${isOccupied}`);
+
+  if (!label) {
+    console.warn(`[updateSlotUI] No label found for slot ${slotNumber}`);
+    return;
+  }
+
+  const allSlots = document.querySelectorAll(".slot");
+  if (allSlots.length === 0) {
+    console.warn("[updateSlotUI] No .slot elements found in DOM");
+  }
+
+  allSlots.forEach(el => {
+    console.log(`[updateSlotUI] Checking element with text: "${el.textContent.trim()}"`);
+    if (el.textContent.trim() === label) {
+      console.log(`[updateSlotUI] Updating class for: ${label}, setting occupied = ${isOccupied}`);
+      el.classList.toggle("occupied", isOccupied);
+    }
+  });
+}
+
+function listenToParkingSlots() {
+  for (let i = 1; i <= 6; i++) {
+    const path = `parkingSlots/${i}`;
+    const slotRef = ref(db, path);
+    console.log(`[listenToParkingSlots] Listening to ${path}`);
+    
+    onValue(slotRef, (snapshot) => {
+      const isOccupied = snapshot.val();
+      console.log(`[Firebase] Slot ${i} snapshot value: ${isOccupied}`);
+      updateSlotUI(i, isOccupied === true);
+    }, (error) => {
+      console.error(`[Firebase] Error at slot ${i}:`, error);
+    });
+  }
+}
+
 function authReady() {
   return new Promise(resolve => {
     const unsubscribe = onAuthStateChanged(auth, user => {
@@ -454,6 +502,7 @@ function authReady() {
     console.log("[Init] Waiting for auth...");
     await authReady();
     console.log("[Init] Auth complete");
+    listenToParkingSlots();
   } catch (err) {
     console.error('[Init] Initialization error:', err);
   }
