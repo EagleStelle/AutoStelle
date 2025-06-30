@@ -15,9 +15,9 @@ const $ = id => document.getElementById(id);
 
 console.log("[monitor.js] Script loaded");
 
-const modeToggleBtn = document.getElementById("modeToggle");
-const mainContainer = document.getElementById("mainContainer");
-const adminContainer = document.getElementById("adminContainer");
+const modeToggleBtn = $('modeToggle');
+const mainContainer = $('mainContainer');
+const adminContainer = $('adminContainer');
 
 if (modeToggleBtn && mainContainer && adminContainer) {
   modeToggleBtn.addEventListener("click", () => {
@@ -39,7 +39,18 @@ if (modeToggleBtn && mainContainer && adminContainer) {
 const reserveBtn = $('reserve');
 const cancelScanBtn = $('cancelScan');
 const logoutBtn = $('logout');
-const controlPanel = $('controlPanel');
+const branding = $('branding');
+const control = $('control');
+const normalSlider = $('normalSlider');
+const reservedSlider = $('reservedSlider');
+const normalContainer = $('normalSlots');
+const reservedContainer = $('reservedSlots');
+
+if (branding) {
+  branding.addEventListener('dblclick', () => {
+    window.location.href = 'login.html';
+  });
+}
 
 let isScanning = false;
 let stopScan = null;
@@ -92,13 +103,13 @@ function setupReserve() {
     showModal("addModal");
   });
 
-  const confirmAddBtn = document.getElementById("confirmAdd");
-  const cancelAddBtn = document.getElementById("cancelAdd");
+  const addForm = document.getElementById("addForm");
+  addForm?.addEventListener("submit", async (e) => {
+    e.preventDefault(); // prevent page refresh
 
   // Track last processed UID in this scan session
   let lastProcessedUID = null;
 
-  confirmAddBtn?.addEventListener("click", async () => {
     if (!auth.currentUser) {
       console.warn('[Reserve] No authenticated user');
       return;
@@ -215,7 +226,7 @@ function setupReserve() {
     }
   });
 
-  cancelAddBtn?.addEventListener("click", () => {
+  cancelAdd?.addEventListener("click", () => {
     console.log("[Reserve] Cancel clicked");
     closeModal("addModal");
     resetInputFields();
@@ -255,8 +266,6 @@ function waitForElement(selector, timeout = 5000) {
 }
 
 async function setupRemoveUIDs() {
-  console.log("setupRemoveUIDs: waiting for elements…");
-
   try {
     // Wait for the UI elements:
     const uidList       = await waitForElement("#uidList");
@@ -342,7 +351,6 @@ async function setupRemoveUIDs() {
         `;
 
         const del = document.createElement("button");
-        del.className = "delete-btn";
         del.dataset.uid = item.uid;
         del.innerHTML = '<i class="fa-solid fa-trash"></i>';
         del.addEventListener("click", async () => {
@@ -441,7 +449,7 @@ function updateSlotUI(slotNumber, isOccupied) {
   };
 
   const label = slotMap[slotNumber];
-  console.log(`[updateSlotUI] slotNumber: ${slotNumber}, label: ${label}, isOccupied: ${isOccupied}`);
+  // console.log(`[updateSlotUI] slotNumber: ${slotNumber}, label: ${label}, isOccupied: ${isOccupied}`);
 
   if (!label) {
     console.warn(`[updateSlotUI] No label found for slot ${slotNumber}`);
@@ -454,9 +462,9 @@ function updateSlotUI(slotNumber, isOccupied) {
   }
 
   allSlots.forEach(el => {
-    console.log(`[updateSlotUI] Checking element with text: "${el.textContent.trim()}"`);
+    // console.log(`[updateSlotUI] Checking element with text: "${el.textContent.trim()}"`);
     if (el.textContent.trim() === label) {
-      console.log(`[updateSlotUI] Updating class for: ${label}, setting occupied = ${isOccupied}`);
+      // console.log(`[updateSlotUI] Updating class for: ${label}, setting occupied = ${isOccupied}`);
       el.classList.toggle("occupied", isOccupied);
     }
   });
@@ -466,11 +474,11 @@ function listenToParkingSlots() {
   for (let i = 1; i <= 6; i++) {
     const path = `parkingSlots/${i}`;
     const slotRef = ref(db, path);
-    console.log(`[listenToParkingSlots] Listening to ${path}`);
+    // console.log(`[listenToParkingSlots] Listening to ${path}`);
     
     onValue(slotRef, (snapshot) => {
       const isOccupied = snapshot.val();
-      console.log(`[Firebase] Slot ${i} snapshot value: ${isOccupied}`);
+      // console.log(`[Firebase] Slot ${i} snapshot value: ${isOccupied}`);
       updateSlotUI(i, isOccupied === true);
     }, (error) => {
       console.error(`[Firebase] Error at slot ${i}:`, error);
@@ -478,14 +486,36 @@ function listenToParkingSlots() {
   }
 }
 
+const updateSlots = (container, prefix, count, reserved = false) => {
+  container.innerHTML = '';
+  for (let i = 1; i <= count; i++) {
+    const slot = document.createElement('div');
+    slot.className = 'slot' + (reserved ? ' reserved' : '');
+    slot.textContent = prefix + i;
+    container.appendChild(slot);
+  }
+};
+
+normalSlider.addEventListener('input', () => {
+  updateSlots(normalContainer, 'A', parseInt(normalSlider.value));
+});
+
+reservedSlider.addEventListener('input', () => {
+  updateSlots(reservedContainer, 'R', parseInt(reservedSlider.value), true);
+});
+
+// Initialize on load
+updateSlots(normalContainer, 'A', parseInt(normalSlider.value));
+updateSlots(reservedContainer, 'R', parseInt(reservedSlider.value), true);
+
 function authReady() {
   return new Promise(resolve => {
     const unsubscribe = onAuthStateChanged(auth, user => {
       console.log("[authReady] Auth state changed. User:", user?.email || "None");
       if (user) {
-        controlPanel?.classList.remove('hidden');
+        control?.classList.remove("hidden");
       } else {
-        controlPanel?.classList.add('hidden');
+        control?.classList.add("hidden");
       }
       setupLogout();
       setupReserve();

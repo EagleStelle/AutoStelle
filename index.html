@@ -15,9 +15,6 @@
         <div class="slot">A1</div>
         <div class="slot">A2</div>
         <div class="slot">A3</div>
-        <div class="slot">A4</div>
-        <div class="slot">A5</div>
-        <div class="slot">A6</div>
         <!-- Add more if needed -->
       </div>
     </div>
@@ -28,9 +25,6 @@
         <div class="slot reserved">R1</div>
         <div class="slot reserved">R2</div>
         <div class="slot reserved">R3</div>
-        <div class="slot reserved">R4</div>
-        <div class="slot reserved">R5</div>
-        <div class="slot reserved">R6</div>
         <!-- Add more if needed -->
       </div>
     </div>
@@ -111,12 +105,16 @@
       <p>© 2025 AutoStelle. All rights reserved.</p>
     </div>
 
-    <div class="branding">
+    <div class="branding" id="branding">
       <h1>AutoStelle</h1>
       <p>Intelligent Parking with Stellar Precision</p>
     </div>
 
-    <div class="control">
+    <div class="control hidden" id="control">
+      <div class="slider-group">
+        <input type="range" id="normalSlider" min="3" max="20" value="3" title="Normal Slots" />
+        <input type="range" id="reservedSlider" min="3" max="20" value="3" title="Reserved Slots" />
+      </div>
       <button id="modeToggle" title="Switch Mode">
         <i class="fas fa-gear"></i>
       </button>
@@ -137,13 +135,14 @@
     <div class="modal-backdrop"></div>
     <div class="modal-content">
       <h2>Add New Reservation</h2>
-      <input type="text" id="inputName" placeholder="Enter name" />
-      <input type="text" id="inputPlate" placeholder="Enter plate number" />
-      <!-- Add more inputs as needed -->
-      <div class="modal-actions">
-        <button id="confirmAdd">Confirm</button>
-        <button id="cancelAdd">Cancel</button>
-      </div>
+        <form id="addForm">
+          <input type="text" id="inputName" placeholder="Enter name" />
+          <input type="text" id="inputPlate" placeholder="Enter plate number" />
+          <div class="modal-actions">
+            <button type="submit" id="confirmAdd">Confirm</button>
+            <button type="button" id="cancelAdd">Cancel</button>
+          </div>
+        </form>
     </div>
   </div>
 
